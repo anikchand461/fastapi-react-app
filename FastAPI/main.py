@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
-from typing import Annotated
+from typing import Annotated, List
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import Sessionlocal, engine
@@ -9,12 +9,15 @@ from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 origins = [
-    'http://localhost:3000'
+    'http://localhost:3000',
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*']
 )
 
 class TransactionBase(BaseModel):
@@ -49,5 +52,15 @@ async def create_transaction(transaction: TransactionBase, db: db_dependency):
     db.commit()
     db.refresh(db_transaction)
     return db_transaction
+
+@app.get("/transactions/", response_model=List[TransactionModel])
+async def read_transactions(db: db_dependency, skip: int = 0, limit: int = 100):
+    transactions = db.query(models.Transaction).offset(skip).limit(limit).all()
+    return transactions     
+
+
+
+
+
 
 
